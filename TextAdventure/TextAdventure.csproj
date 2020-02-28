@@ -47,7 +47,12 @@
     <Compile Include="Room.cs" />
     <Compile Include="Map.cs" />
     <Compile Include="Menu.cs" />
+    <Compile Include="Mob.cs" />
     <Compile Include="Player.cs" />
+    <Compile Include="Weapon.cs" />
+    <Compile Include="Potion.cs" />
+    <Compile Include="Character.cs" />
+    <Compile Include="Item.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
   </ItemGroup>
   <ItemGroup>

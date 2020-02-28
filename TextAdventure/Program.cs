@@ -9,11 +9,164 @@ namespace Game {
 class Program {
 
   static void Main(string[] args) {
+    Console.WriteLine();
+
     Map map = new Map();
-    Player player = new Player(map.StartingRoom);
+    Menu menu = new Menu();
+    Player player = new Player();
+
+    menu.Choices.Add("move", (argument) => {
+      if (argument == null) {
+        return;
+      }
+
+      if (player.Battling) {
+        Console.WriteLine("You cannot run away from battle.");
+        return;
+      }
+
+      if (Enum.TryParse(argument, true, out Direction direction)) {
+        Room room = player.Room[direction];
+
+        if (room != null) {
+          room.TryEnter(player, direction);
+        }
+      }
+    });
+
+    menu.Choices.Add("look", (argument) => {
+      if (player.Battling) {
+        // ...
+      } else {
+        Console.WriteLine(player.Room.Description);
+
+        foreach (Item item in player.Room.Items) {
+          Console.WriteLine($"You see a(n) {item.Name} on the ground.");
+        }
+
+        foreach (var direction in (Direction[])Enum.GetValues(typeof(Direction))) {
+          Room room = player.Room[direction];
+
+          if (room != null) {
+            string name = direction.ToString().ToLowerInvariant();
+            Console.WriteLine($"{name}) {room.Name}");
+          }
+        }
+      }
+    });
+
+    menu.Choices.Add("take", (argument) => {
+      if (argument == null) {
+        return;
+      }
+
+      Item found = player.Room.Items.FirstOrDefault((item) => (
+        item.Name.ToLowerInvariant() == argument.ToLowerInvariant()
+      ));
+
+      if (found != null) {
+        Console.WriteLine($"You pick up the {found.Name}");
+        found.Take(player);
+      }
+    });
+
+    menu.Choices.Add("drop", (argument) => {
+      if (argument == null) {
+        return;
+      }
+
+      Item found = player.Items.FirstOrDefault((item) => (
+        item.Name.ToLowerInvariant() == argument.ToLowerInvariant()
+      ));
+
+      if (found != null) {
+        found.Drop(player.Room);
+        Console.WriteLine($"You dropped the {found.Name}");
+      }
+    });
+
+    menu.Choices.Add("use", (argument) => {
+      if (argument == null) {
+        return;
+      }
+
+      Item found = player.Items.FirstOrDefault((item) => (
+        item.Name.ToLowerInvariant() == argument.ToLowerInvariant()
+      ));
+
+      if (found != null) {
+        Console.WriteLine($"You use the {found.Name}");
+        found.Use(player);
+      }
+    });
+
+    menu.Choices.Add("status", (argument) => {
+      Console.WriteLine($"HP: {player.Health}");
+
+      if (player.Weapon != null) {
+        Console.WriteLine($"Weapon: {player.Weapon.Name} (attack: {player.Weapon.Attack})");
+      } else {
+        Console.WriteLine($"Weapon: none");
+      }
+
+      Console.WriteLine($"You have {player.Items.Count} item(s):");
+
+      foreach (Item item in player.Items) {
+        Console.WriteLine($" > {item.Name}");
+      }
+    });
+
+    menu.Choices.Add("attack", (argument) => {
+      var mobs = player.Room.Characters.OfType<Mob>();
+
+      if (argument == null) {
+        if (mobs.Count() == 1) {
+          argument = mobs.ElementAt(0).Name;
+        }
+      }
+
+      Mob target = mobs.FirstOrDefault((mob) => (
+        mob.Name.ToLowerInvariant() == argument.ToLowerInvariant()
+      ));
+
+      if (target != null) {
+        Console.WriteLine($"You attack the {target.Name}.");
+
+        if (player.Weapon != null) {
+          target.Health -= player.Weapon.Attack;
+          Console.WriteLine($"You do {player.Weapon.Attack} damage.");
+
+          if (target.Health <= 0) {
+            Console.WriteLine($"You kill the {target.Name}.");
+            target.Kill();
+            target.Room = null;
+
+            if (player.Room.Characters.OfType<Mob>().Count() == 0) {
+              player.Battling = false;
+            }
+
+            return;
+          }
+        }
+
+        target.Attack(player);
+
+        if (player.Health <= 0) {
+          Console.WriteLine("You died.");
+        }
+
+        Console.WriteLine($"Your HP: {player.Health}");
+
+        foreach (Mob mob in mobs) {
+          Console.WriteLine($"{mob.Name} HP: {mob.Health}");
+        }
+      }
+    });
+
+    map.StartingRoom.TryEnter(player, Direction.North);
+    menu.Process();
 
     //loop condition
-    bool exit = false;
     // string[] rooms = new string[] { "1)Woods", "2)Cave", "3)Village Far Away", "4)Towards the Waterfall" };//Rooms
     // string[] weapons = new string[] { "Sword", "Shuriken", "Dagger", "JuJitsu" };//Rooms
     // string[] potion = new string[] { "Healing", "Mana", };
@@ -21,21 +174,6 @@ class Program {
     // List<string> mobs = new List<string>() { "Wandering Trader", "Fox", "Pig", "Salmon" };//Monsters
 
     for (;;) {
-      Console.WriteLine($"You are in {player.Room.Name}. {player.Room.Description}");
-      Console.WriteLine("Where do you want to go?");
-      int index = 1;
-
-      foreach (Room room in player.Room.Pathways) {
-        Console.WriteLine($"{index}) {room.Name}");
-        ++index;
-      }
-
-      int number = Int32.Parse(Console.ReadLine());
-
-      if (number >= 1 && number <= player.Room.Pathways.Count) {
-        player.Room = player.Room.Pathways[number - 1];
-      }
-
       //Display main menu for the users choices
       // Console.WriteLine("1.) Display Rooms");
       // Console.WriteLine("2.) Display Weapons");

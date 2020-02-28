@@ -7,7 +7,7 @@ namespace Game {
 
 class Menu {
 
-  public delegate void ChoiceAction(string command, string[] arguments);
+  public delegate void ChoiceAction(string argument);
 
   public Dictionary<string, ChoiceAction> Choices { get; set; }
 
@@ -30,7 +30,7 @@ class Menu {
         continue;
       }
 
-      action(command, input.Skip(1).ToArray());
+      action(input.Length == 1 ? null : String.Join(" ", input.Skip(1)));
     }
   }
 
